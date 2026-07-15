@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bintang Store</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; background: #f3f4f6;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  input::placeholder { color: #aaa; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* ── HEADER ── */
+  .header { background:#1d4ed8; padding:14px 16px; box-shadow:0 3px 12px rgba(29,78,216,.45); }
+  .header-inner { max-width:700px; margin:0 auto; }
+  .title-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .title-row h1 { margin:0; color:#fff; font-size:20px; font-weight:800; line-height:1; }
+  .title-row span { color:rgba(255,255,255,.7); font-size:11px; }
+
+  .search-wrap { position:relative; margin-bottom:10px; }
+  .search-wrap .icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
+  .search-wrap input {
+    width:100%; padding:9px 34px 9px 36px; border:none; border-radius:8px; font-size:13px;
+    outline:none; background:rgba(255,255,255,.18); color:#fff; font-family:inherit;
+  }
+  .search-clear {
+    position:absolute; right:9px; top:50%; transform:translateY(-50%); background:none;
+    border:none; color:rgba(255,255,255,.8); cursor:pointer; font-size:18px; line-height:1; padding:0; display:none;
+  }
+
+  .fs-row { display:flex; align-items:center; gap:6px; }
+  .fs-row .aa { color:rgba(255,255,255,.65); font-size:11px; font-weight:600; letter-spacing:.3px; }
+  .fs-btns { display:flex; gap:4px; }
+  .fs-btn {
+    padding:3px 10px; border:none; border-radius:20px; cursor:pointer;
+    background:rgba(255,255,255,.18); color:rgba(255,255,255,.8); font-weight:500;
+    font-family:inherit; transition:all .15s; min-width:28px;
+  }
+  .fs-btn.active { background:#fff; color:#1d4ed8; font-weight:800; }
+  .fs-hint { color:rgba(255,255,255,.45); font-size:10px; margin-left:2px; }
+
+  .search-hint {
+    background:#eff6ff; border-bottom:1px solid #dbeafe; padding:6px 16px; font-size:12px; color:#3b82f6; display:none;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap { max-width:700px; margin:0 auto; padding:14px 12px 0; }
+  .table-box { background:#fff; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .thead {
+    display:grid; grid-template-columns:32px 1fr 96px 96px 32px; background:#1d4ed8;
+    padding:9px 10px; gap:6px; align-items:center;
+  }
+  .thead .h-label { color:#fff; font-size:11px; font-weight:700; letter-spacing:.5px; }
+  .thead .h-right { text-align:right; white-space:nowrap; border-left:1px solid rgba(255,255,255,.3); padding-left:8px; }
+  .thead .h-bordercell { border-left:1px solid rgba(255,255,255,.3); }
+
+  .empty-state { padding:48px 16px; text-align:center; color:#9ca3af; }
+
+  .row {
+    display:grid; grid-template-columns:32px 1fr 96px 96px 32px; align-items:center; gap:6px;
+    padding:10px; border-top:1px solid #f3f4f6;
+  }
+  .row:first-child { border-top:none; }
+  .row.fav { background:#fffbeb; }
+
+  .fav-btn { background:none; border:none; cursor:pointer; line-height:1; padding:0; opacity:.2; transition:opacity .2s; }
+  .fav-btn.active { opacity:1; }
+
+  .name-cell .name-text { color:#111827; line-height:1.3; }
+  .name-cell .name-text.fav-name { font-weight:700; }
+  .fav-badge {
+    font-size:10px; color:#d97706; background:#fef3c7; padding:1px 5px; border-radius:8px; display:inline-block; margin-top:2px;
+  }
+
+  .buy-cell {
+    color:#6b7280; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;
+    border-left:1px solid #e5e7eb; padding-left:8px; align-self:stretch; display:flex; align-items:center; justify-content:flex-end;
+  }
+  .sell-cell {
+    text-align:right; white-space:nowrap; border-left:1px solid #e5e7eb; padding-left:8px; align-self:stretch;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .sell-cell .sell-amount { color:#059669; font-weight:700; font-variant-numeric:tabular-nums; }
+  .sell-cell .sell-pct { font-size:10px; color:#10b981; margin-top:1px; }
+
+  .del-cell { border-left:1px solid #e5e7eb; align-self:stretch; display:flex; align-items:center; justify-content:center; }
+  .del-btn {
+    width:26px; height:26px; border-radius:6px; border:none; background:#fee2e2; color:#dc2626; cursor:pointer;
+    font-size:16px; line-height:1; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  }
+
+  .add-btn {
+    width:100%; margin-top:14px; padding:13px; background:#1d4ed8; color:#fff; border:none;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;
+    box-shadow:0 3px 10px rgba(29,78,216,.35);
+  }
+  .footnote { text-align:center; font-size:11px; color:#9ca3af; margin-top:10px; margin-bottom:20px; }
+
+  /* ── MODAL: ADD ── */
+  .overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:flex-end; justify-content:center;
+    z-index:200; backdrop-filter:blur(2px);
+  }
+  .overlay.show { display:flex; }
+  .sheet {
+    background:#fff; border-radius:22px 22px 0 0; padding:24px; width:100%; max-width:600px;
+    box-shadow:0 -8px 30px rgba(0,0,0,.18); animation:up .25s ease;
+  }
+  @keyframes up { from{ transform:translateY(60px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .sheet-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .sheet-head span { font-weight:800; font-size:17px; color:#111827; }
+  .close-btn {
+    background:#f3f4f6; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer;
+    font-size:17px; color:#6b7280; display:flex; align-items:center; justify-content:center;
+  }
+  .err-box { background:#fee2e2; color:#b91c1c; font-size:13px; padding:9px 13px; border-radius:8px; margin-bottom:14px; display:none; }
+  .form-col { display:flex; flex-direction:column; gap:12px; }
+  .lbl { display:block; font-size:12px; font-weight:700; color:#6b7280; margin-bottom:6px; letter-spacing:.3px; }
+  .inp {
+    padding:11px 13px; border:1.5px solid #d1d5db; border-radius:9px; font-size:14px; outline:none;
+    width:100%; font-family:inherit; transition:border-color .15s;
+  }
+  .inp:focus { border-color:#1d4ed8; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .margin-box { border-radius:9px; padding:9px 13px; font-size:13px; display:none; }
+  .margin-box.ok { background:#f0fdf4; border:1px solid #bbf7d0; }
+  .margin-box.bad { background:#fff5f5; border:1px solid #fecaca; }
+  .save-btn {
+    padding:13px; background:#1d4ed8; color:#fff; border:none; border-radius:9px; font-size:15px;
+    font-weight:700; cursor:pointer; font-family:inherit; margin-top:2px;
+  }
+
+  /* ── MODAL: DELETE CONFIRM ── */
+  .confirm-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center;
+    z-index:200; padding:20px; backdrop-filter:blur(2px);
+  }
+  .confirm-overlay.show { display:flex; }
+  .confirm-box { background:#fff; border-radius:16px; padding:24px; max-width:300px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.2); }
+  .confirm-box .emoji { font-size:38px; margin-bottom:8px; }
+  .confirm-box .q { margin:0 0 4px; font-weight:700; color:#111827; font-size:16px; }
+  .confirm-box .name { margin:0 0 20px; color:#6b7280; font-size:14px; }
+  .confirm-actions { display:flex; gap:10px; }
+  .btn-cancel, .btn-del {
+    flex:1; padding:11px; border:none; border-radius:8px; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  .btn-cancel { background:#f3f4f6; color:#374151; font-weight:600; }
+  .btn-del { background:#dc2626; color:#fff; font-weight:700; }
+
+  /* ── SAVE TOAST ── */
+  .save-toast {
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#111827; color:#fff; font-size:12px; padding:8px 16px; border-radius:20px;
+    opacity:0; transition:opacity .25s, transform .25s; z-index:300; pointer-events:none;
+    display:flex; align-items:center; gap:6px;
+  }
+  .save-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="title-row">
+        <h1>⭐ Bintang Store</h1>
+        <span id="itemCount">0 barang</span>
+      </div>
+
+      <div class="search-wrap">
+        <span class="icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Cari nama barang...">
+        <button class="search-clear" id="searchClear">×</button>
+      </div>
+
+      <div class="fs-row">
+        <span class="aa">Aa</span>
+        <div class="fs-btns" id="fsBtns"></div>
+        <span class="fs-hint">ukuran teks</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-hint" id="searchHint">
+    ⭐ Favorit selalu tampil &nbsp;·&nbsp; <strong id="searchHintCount">0</strong> barang
+  </div>
+
+  <!-- ── TABLE ── -->
+  <div class="table-wrap">
+    <div class="table-box">
+      <div class="thead">
+        <div></div>
+        <div class="h-label">NAMA BARANG</div>
+        <div class="h-label h-right">HARGA BELI</div>
+        <div class="h-label h-right">HARGA JUAL</div>
+        <div class="h-bordercell"></div>
+      </div>
+      <div id="rows"></div>
+    </div>
+
+    <button class="add-btn" id="openAddBtn">+ Tambah Barang</button>
+    <p class="footnote">Urut A–Z otomatis · ⭐ tap untuk favorit</p>
+  </div>
+
+  <!-- ── MODAL: ADD ── -->
+  <div class="overlay" id="addOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <span>Tambah Barang</span>
+        <button class="close-btn" id="closeAddBtn">✕</button>
+      </div>
+      <div class="err-box" id="errBox"></div>
+      <div class="form-col">
+        <div>
+          <label class="lbl">Nama Barang</label>
+          <input type="text" class="inp" id="fName" placeholder="cth: Beras Premium 5kg">
+        </div>
+        <div class="form-grid">
+          <div>
+            <label class="lbl">Harga Beli (Rp)</label>
+            <input type="number" class="inp" id="fBuy" placeholder="0" min="0">
+          </div>
+          <div>
+            <label class="lbl">Harga Jual (Rp)</label>
+            <input type="number" class="inp" id="fSell" placeholder="0" min="0">
+          </div>
+        </div>
+        <div class="margin-box" id="marginBox"></div>
+        <button class="save-btn" id="saveAddBtn">✅ Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: DELETE CONFIRM ── -->
+  <div class="confirm-overlay" id="delOverlay">
+    <div class="confirm-box">
+      <div class="emoji">🗑️</div>
+      <p class="q">Hapus Barang?</p>
+      <p class="name" id="delItemName"></p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" id="cancelDelBtn">Batal</button>
+        <button class="btn-del" id="confirmDelBtn">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SAVE TOAST ── -->
+  <div class="save-toast" id="saveToast">💾 Tersimpan</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY_ITEMS = "bintang-items";
+  var STORAGE_KEY_FS    = "bintang-fs";
+
+  var SAMPLE = [
+    { id:1, name:"Beras Premium 5kg",  buy:70000, sell:75000, fav:false },
+    { id:2, name:"Gula Pasir 1kg",     buy:12000, sell:14000, fav:false },
+    { id:3, name:"Indomie Goreng",     buy:2800,  sell:3500,  fav:false },
+    { id:4, name:"Minyak Goreng 2L",   buy:28000, sell:32000, fav:false },
+    { id:5, name:"Sabun Lifebuoy",     buy:6000,  sell:8000,  fav:false },
+    { id:6, name:"Teh Botol Sosro",    buy:4000,  sell:5000,  fav:false }
+  ];
+
+  var SIZES = [
+    { label:"S", val:11 },
+    { label:"M", val:14 },
+    { label:"L", val:17 },
+    { label:"XL",val:20 }
+  ];
+
+  /* ── state ── */
+  var items = [];
+  var search = "";
+  var fs = 14;
+  var delId = null;
+
+  /* ── helpers ── */
+  function rp(n) { return "Rp " + Number(n).toLocaleString("id-ID"); }
+
+  function loadState() {
+    try {
+      var rawItems = localStorage.getItem(STORAGE_KEY_ITEMS);
+      items = rawItems ? JSON.parse(rawItems) : SAMPLE.slice();
+      if (!rawItems) saveItems();
+      var rawFs = localStorage.getItem(STORAGE_KEY_FS);
+      if (rawFs) fs = parseInt(rawFs, 10);
+    } catch (e) {
+      items = SAMPLE.slice();
+    }
+  }
+
+  var saveTimer = null;
+  function showSavedToast() {
+    var toast = document.getElementById("saveToast");
+    toast.classList.add("show");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { toast.classList.remove("show"); }, 900);
+  }
+
+  function saveItems() {
+    try {
+      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
+      showSavedToast();
+    } catch (e) {}
+  }
+
+  function saveFontSize(size) {
+    fs = size;
+    try { localStorage.setItem(STORAGE_KEY_FS, String(size)); } catch (e) {}
+  }
+
+  function persist(list) {
+    items = list;
+    saveItems();
+    render();
+  }
+
+  /* ── derived list ── */
+  function getDisplayed() {
+    var q = search.toLowerCase().trim();
+    var sorted = items.slice().sort(function (a, b) {
+      return a.name.localeCompare(b.name, "id");
+    });
+    if (!q) return sorted;
+    return sorted.filter(function (i) {
+      return i.fav || i.name.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  /* ── actions ── */
+  function toggleFav(id) {
+    var list = items.map(function (i) {
+      if (i.id === id) return Object.assign({}, i, { fav: !i.fav });
+      return i;
+    });
+    persist(list);
+  }
+
+  function openAdd() {
+    document.getElementById("errBox").style.display = "none";
+    document.getElementById("fName").value = "";
+    document.getElementById("fBuy").value = "";
+    document.getElementById("fSell").value = "";
+    document.getElementById("marginBox").style.display = "none";
+    document.getElementById("addOverlay").classList.add("show");
+    document.getElementById("fName").focus();
+  }
+
+  function closeAdd() {
+    document.getElementById("addOverlay").classList.remove("show");
+  }
+
+  function showErr(msg) {
+    var box = document.getElementById("errBox");
+    box.textContent = "⚠️ " + msg;
+    box.style.display = "block";
+  }
+
+  function handleAdd() {
+    var name = document.getElementById("fName").value.trim();
+    var buy  = document.getElementById("fBuy").value;
+    var sell = document.getElementById("fSell").value;
+
+    if (!name) { showErr("Nama barang kosong!"); return; }
+    if (!buy || Number(buy) < 0) { showErr("Harga beli tidak valid!"); return; }
+    if (!sell || Number(sell) < 0) { showErr("Harga jual tidak valid!"); return; }
+
+    document.getElementById("errBox").style.display = "none";
+    var newList = items.concat([{
+      id: Date.now(),
+      name: name,
+      buy: parseInt(buy, 10),
+      sell: parseInt(sell, 10),
+      fav: false
+    }]);
+    persist(newList);
+    closeAdd();
+  }
+
+  function openDelConfirm(id) {
+    delId = id;
+    var item = items.find(function (i) { return i.id === id; });
+    document.getElementById("delItemName").textContent = item ? '"' + item.name + '"' : "";
+    document.getElementById("delOverlay").classList.add("show");
+  }
+
+  function closeDelConfirm() {
+    delId = null;
+    document.getElementById("delOverlay").classList.remove("show");
+  }
+
+  function handleDel() {
+    var newList = items.filter(function (i) { return i.id !== delId; });
+    persist(newList);
+    closeDelConfirm();
+  }
+
+  function updateMarginPreview() {
+    var buy = Number(document.getElementById("fBuy").value);
+    var sell = Number(document.getElementById("fSell").value);
+    var box = document.getElementById("marginBox");
+    if (buy > 0 && sell > 0) {
+      box.style.display = "block";
+      if (sell >= buy) {
+        box.className = "margin-box ok";
+        var pct = (((sell - buy) / buy) * 100).toFixed(1);
+        box.innerHTML = "Untung: <strong style='color:#059669'>" + rp(sell - buy) + "</strong> (" + pct + "%)";
+      } else {
+        box.className = "margin-box bad";
+        box.innerHTML = "<span style='color:#dc2626'>⚠️ Harga jual lebih kecil dari harga beli!</span>";
+      }
+    } else {
+      box.style.display = "none";
+    }
+  }
+
+  /* ── render ── */
+  function renderFsButtons() {
+    var wrap = document.getElementById("fsBtns");
+    wrap.innerHTML = "";
+    SIZES.forEach(function (s) {
+      var btn = document.createElement("button");
+      btn.className = "fs-btn" + (fs === s.val ? " active" : "");
+      btn.textContent = s.label;
+      btn.style.fontSize = (s.val * 0.72) + "px";
+      btn.addEventListener("click", function () {
+        saveFontSize(s.val);
+        render();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function render() {
+    var favCount = items.filter(function (i) { return i.fav; }).length;
+    document.getElementById("itemCount").textContent =
+      items.length + " barang" + (favCount > 0 ? " · ⭐" + favCount : "");
+
+    var q = search.toLowerCase().trim();
+    var displayed = getDisplayed();
+
+    var hint = document.getElementById("searchHint");
+    if (q) {
+      hint.style.display = "block";
+      document.getElementById("searchHintCount").textContent = displayed.length;
+    } else {
+      hint.style.display = "none";
+    }
+
+    document.getElementById("searchClear").style.display = search ? "block" : "none";
+
+    renderFsButtons();
+
+    var rowsEl = document.getElementById("rows");
+    rowsEl.innerHTML = "";
+
+    if (displayed.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.style.fontSize = fs + "px";
+      empty.textContent = q ? "Tidak ada barang yang cocok" : "Belum ada barang";
+      rowsEl.appendChild(empty);
+      return;
+    }
+
+    displayed.forEach(function (item, i) {
+      var onlyByFav = q && item.fav && item.name.toLowerCase().indexOf(q) === -1;
+      var margin = item.sell - item.buy;
+      var pct = item.buy > 0 ? ((margin / item.buy) * 100).toFixed(0) : 0;
+
+      var row = document.createElement("div");
+      row.className = "row" + (item.fav ? " fav" : "");
+      row.style.background = item.fav ? "" : (i % 2 === 0 ? "#fff" : "#fafafa");
+      row.style.padding = Math.max(8, fs * 0.65) + "px 10px";
+
+      // fav button
+      var favBtn = document.createElement("button");
+      favBtn.className = "fav-btn" + (item.fav ? " active" : "");
+      favBtn.style.fontSize = Math.max(14, fs + 2) + "px";
+      favBtn.textContent = "⭐";
+      favBtn.addEventListener("click", function () { toggleFav(item.id); });
+      row.appendChild(favBtn);
+
+      // name cell
+      var nameCell = document.createElement("div");
+      nameCell.className = "name-cell";
+      var nameText = document.createElement("div");
+      nameText.className = "name-text" + (item.fav ? " fav-name" : "");
+      nameText.style.fontSize = fs + "px";
+      nameText.textContent = item.name;
+      nameCell.appendChild(nameText);
+      if (onlyByFav) {
+        var badge = document.createElement("span");
+        badge.className = "fav-badge";
+        badge.style.fontSize = Math.max(9, fs - 4) + "px";
+        badge.textContent = "favorit";
+        nameCell.appendChild(badge);
+      }
+      row.appendChild(nameCell);
+
+      // buy cell
+      var buyCell = document.createElement("div");
+      buyCell.className = "buy-cell";
+      buyCell.style.fontSize = fs + "px";
+      buyCell.textContent = rp(item.buy);
+      row.appendChild(buyCell);
+
+      // sell cell
+      var sellCell = document.createElement("div");
+      sellCell.className = "sell-cell";
+      var sellAmt = document.createElement("div");
+      sellAmt.className = "sell-amount";
+      sellAmt.style.fontSize = fs + "px";
+      sellAmt.textContent = rp(item.sell);
+      sellCell.appendChild(sellAmt);
+      if (margin > 0) {
+        var sellPct = document.createElement("div");
+        sellPct.className = "sell-pct";
+        sellPct.style.fontSize = Math.max(9, fs - 4) + "px";
+        sellPct.textContent = "+" + pct + "%";
+        sellCell.appendChild(sellPct);
+      }
+      row.appendChild(sellCell);
+
+      // delete cell
+      var delCell = document.createElement("div");
+      delCell.className = "del-cell";
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.textContent = "×";
+      delBtn.addEventListener("click", function () { openDelConfirm(item.id); });
+      delCell.appendChild(delBtn);
+      row.appendChild(delCell);
+
+      rowsEl.appendChild(row);
+    });
+  }
+
+  /* ── wire up events ── */
+  document.getElementById("searchInput").addEventListener("input", function (e) {
+    search = e.target.value;
+    render();
+  });
+  document.getElementById("searchClear").addEventListener("click", function () {
+    search = "";
+    document.getElementById("searchInput").value = "";
+    render();
+  });
+  document.getElementById("openAddBtn").addEventListener("click", openAdd);
+  document.getElementById("closeAddBtn").addEventListener("click", closeAdd);
+  document.getElementById("addOverlay").addEventListener("click", function (e) {
+    if (e.target === e.currentTarget) closeAdd();
+  });
+  document.getElementById("saveAddBtn").addEventListener("click", handleAdd);
+  document.getElementById("fBuy").addEventListener("input", updateMarginPreview);
+  document.getElementById("fSell").addEventListener("input", updateMarginPreview);
+  document.getElementById("fName").addEventListener("input", function () {
+    document.getElementById("errBox").style.display = "none";
+  });
+
+  document.getElementById("cancelDelBtn").addEventListener("click", closeDelConfirm);
+  document.getElementById("confirmDelBtn").addEventListener("click", handleDel);
+  document.getElementById("delOverlay").addEventListener("click", function (e) {
+    if (e.target === e.currentTarget) closeDelConfirm();
+  });
+
+  /* ── init ── */
+  loadState();
+  render();
+})();
+</script>
+</body>
+</html>
